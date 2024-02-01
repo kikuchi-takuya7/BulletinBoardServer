@@ -1,9 +1,11 @@
 #include <iostream>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <vector>
 
 #pragma comment( lib, "ws2_32.lib" )
 
+using std::vector;
 
 // ポート番号
 const unsigned short SERVERPORT = 8888;
@@ -57,7 +59,64 @@ int main()
 
 	std::cout << "ok" << std::endl;
 
-	// ループ
+	//60フレーム毎に一回全員に送信する情報を（ここではint）
+	int flame = 0;
+
+	//参加してるクライアントのアドレス情報
+	vector<SOCKADDR_IN> addrList_;
+
+	int num = 0;
+
+	//ここでレイドに参加するクライアントの参加を待つ
+	while (true)
+	{
+
+		//受信
+		char buff[MESSAGELENGTH];
+		SOCKADDR_IN fromAddr;
+		int fromlen = sizeof(fromAddr);
+		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
+		if (ret == SOCKET_ERROR)
+		{
+			std::cout << "recvtoError" << WSAGetLastError() << std::endl;
+			return 1;
+		}
+
+		
+
+		std::cout << "recv message = " << buff << std::endl;
+
+
+		/*for (int i = 0; i < addrList_.size(); i++) {
+
+			if (addrList_.at(i) == fromAddr) {
+
+			}
+		}*/
+
+		//アドレス情報を保存する
+		addrList_.push_back(fromAddr);
+		std::cout << addrList_.size() << std::endl;
+
+		//送信
+		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
+		if (ret != strlen(buff))
+		{
+			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+			return 1;
+		}
+
+		std::cout << "Join OK " << buff << std::endl;
+
+		if (addrList_.size() == 4) {
+
+			break;
+		}
+
+	}
+
+
+	//ここで情報を常に受け取り、一定時間毎にすべてのクライアントに情報を返す
 	while (true)
 	{
 		//受信
@@ -74,15 +133,22 @@ int main()
 		std::cout << "recv message = " << buff << std::endl;
 		
 
-		//送信
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(buff))
-		{
-			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
+		//1秒ごとに送信
+		if (flame <= 60) {
 
-		std::cout << "sended message " << buff << std::endl;
+			for (int i = 0; i < addrList_.size(); i++) {
+			
+				ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
+				if (ret != strlen(buff))
+				{
+					std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+					return 1;
+				}
+
+				std::cout << "sended message " << buff << std::endl;
+			}
+		}
+		
 
 	}
 
