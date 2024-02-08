@@ -117,7 +117,7 @@ int main()
 
 		std::cout << "Join OK " << std::endl;
 
-		//一旦2人以上になったら切る
+		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
 		if (addrList_.size() >= 2) {
 
 			break;
@@ -143,21 +143,21 @@ int main()
 		std::cout << "recv message = " << buff << std::endl;
 		
 
-		//1秒ごとに送信
+		//1秒ごとに送信 10047エラーが出る。間違ったプロトコルかソケットが呼び出されたときに出るらしい
 		if (flame <= 60) {
 
 			for (int i = 0; i < addrList_.size(); i++) {
 			
 				char message[MESSAGELENGTH] = "TestSend";
 
-				ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
-				if (ret != strlen(buff))
+				ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
+				if (ret != strlen(message))
 				{
 					std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 					return 1;
 				}
 
-				std::cout << "sended message " << buff << std::endl;
+				std::cout << "sended message " << message << std::endl;
 			}
 
 			flame = 0;
