@@ -13,6 +13,12 @@ const unsigned short SERVERPORT = 8888;
 // 送受信するメッセージの最大値
 const unsigned int MESSAGELENGTH = 1024;
 
+struct UserData {
+
+	std::string name;
+	SOCKADDR_IN userID;
+
+};
 
 int main()
 {
@@ -26,9 +32,6 @@ int main()
 		std::cout << "initoError" << WSAGetLastError() << std::endl;
 		return 1;
 	}
-	
-	
-
 
 	// ソケットディスクリプタ
 	SOCKET sock;
@@ -63,7 +66,7 @@ int main()
 	int flame = 0;
 
 	//参加してるクライアントのアドレス情報
-	vector<SOCKADDR_IN> addrList_;
+	vector<UserData> addrList_;
 
 	int num = 0;
 
@@ -73,6 +76,8 @@ int main()
 
 		//受信
 		char buff[MESSAGELENGTH];
+
+		//fromAddrに情報が保存される
 		SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(fromAddr);
 		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
@@ -82,11 +87,6 @@ int main()
 			return 1;
 		}
 
-		
-
-		std::cout << "recv message = " << buff << std::endl;
-
-
 		/*for (int i = 0; i < addrList_.size(); i++) {
 
 			if (addrList_.at(i) == fromAddr) {
@@ -94,19 +94,28 @@ int main()
 			}
 		}*/
 
+		UserData data;
+		data.name = buff;
+		data.userID = fromAddr;
+
 		//アドレス情報を保存する
-		addrList_.push_back(fromAddr);
-		std::cout << addrList_.size() << std::endl;
+		addrList_.push_back(data);
+		std::cout << "現在のユーザー数" << addrList_.size() << std::endl;
+
+		std::cout << "userName = " << buff << std::endl;
 
 		//送信
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(buff))
+		char sendChar[MESSAGELENGTH] = "Join OK";
+
+
+		ret = sendto(sock, sendChar, strlen(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+		if (ret != strlen(sendChar))
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 			return 1;
 		}
 
-		std::cout << "Join OK " << buff << std::endl;
+		std::cout << "Join OK " << sendChar << std::endl;
 
 		if (addrList_.size() == 4) {
 
@@ -138,6 +147,8 @@ int main()
 
 			for (int i = 0; i < addrList_.size(); i++) {
 			
+				char message[MESSAGELENGTH] = "TestSend";
+
 				ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
 				if (ret != strlen(buff))
 				{
@@ -147,6 +158,8 @@ int main()
 
 				std::cout << "sended message " << buff << std::endl;
 			}
+
+			flame = 0;
 		}
 		
 
