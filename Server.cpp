@@ -115,9 +115,10 @@ int main()
 			return 1;
 		}
 
-		std::cout << "Join OK " << sendChar << std::endl;
+		std::cout << "Join OK " << std::endl;
 
-		if (addrList_.size() == 4) {
+		//ˆê’U2lˆÈã‚É‚È‚Á‚½‚çØ‚é
+		if (addrList_.size() >= 2) {
 
 			break;
 		}
