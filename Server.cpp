@@ -17,17 +17,11 @@ const unsigned short SERVERPORT = 8888;
 // 送受信するメッセージの最大値
 const unsigned int MESSAGELENGTH = 1024;
 
-//ありえない値
-const int INF = 9999999;
+struct UserData {
 
-struct PlayerInfo {
-	SOCKADDR_IN addr;
-	char playerName[MESSAGELENGTH];
-	int janken;
+	std::string name;
+	SOCKADDR_IN userID;
 
-	PlayerInfo() {
-		janken = INF;
-	}
 };
 
 int main()
@@ -42,9 +36,6 @@ int main()
 		std::cout << "initoError" << WSAGetLastError() << std::endl;
 		return 1;
 	}
-	
-	
-
 
 	// ソケットディスクリプタ
 	SOCKET sock;
@@ -77,9 +68,7 @@ int main()
 
 
 	//参加してるクライアントのアドレス情報
-	vector<PlayerInfo> playerList_;
-
-	vector<int> janken_;
+	vector<UserData> addrList_;
 
 	int num = 0;
 
@@ -89,6 +78,8 @@ int main()
 
 		//受信
 		char buff[MESSAGELENGTH];
+
+		//fromAddrに情報が保存される
 		SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(fromAddr);
 		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
@@ -98,25 +89,7 @@ int main()
 			return 1;
 		}
 
-		std::cout << "recv message = " << buff << std::endl;
-
-		
-
-		//アドレス情報を保存する
-		PlayerInfo info;
-		info.addr = fromAddr;
-		playerList_.push_back(info);
-		std::cout << playerList_.size() << std::endl;
-
-		//送信
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(buff))
-		{
-			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
-
-		std::cout << "Join OK " << buff << std::endl;
+		/*for (int i = 0; i < addrList_.size(); i++) {
 
 		if (playerList_.size() >= 3) {
 
@@ -129,46 +102,31 @@ int main()
 	int pNum = 0;
 	while (playerList_.size() < pNum) {
 
+		UserData data;
+		data.name = buff;
+		data.userID = fromAddr;
+
+		//アドレス情報を保存する
+		addrList_.push_back(data);
+		std::cout << "現在のユーザー数" << addrList_.size() << std::endl;
+
+		std::cout << "userName = " << buff << std::endl;
 
 		//送信
-		char buff[MESSAGELENGTH] = playerList_.at(pNum).playerName + "さんのじゃんけんの手を入力してください";
-		//SOCKADDR_IN fromAddr;
-		int fromlen = sizeof(SOCKADDR_IN);//ここのsizeofに変数のほうを入れてる理由が何かあるのか
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum), fromlen);
-		if (ret != strlen(buff))
+		char sendChar[MESSAGELENGTH] = "Join OK";
+
+
+		ret = sendto(sock, sendChar, strlen(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+		if (ret != strlen(sendChar))
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 			return 1;
 		}
 
-		//受信
-		char buff[MESSAGELENGTH];
-		SOCKADDR_IN fromAddr;
-		int fromlen = sizeof(fromAddr);
-		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
-		if (ret == SOCKET_ERROR)
-		{
-			std::cout << "recvtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
-		std::cout << "recv message = " << buff << std::endl;
+		std::cout << "Join OK " << std::endl;
 
-		if (buff == "ぐー") {
-			janken_.emplace_back(9);
-		}
-		else if (buff == "ちょき") {
-			janken_.emplace_back(2);
-		}
-		else if (buff == "ぱー") {
-			janken_.emplace_back(4);
-		}
-
-	}
-
-	std::string ref_ = { "負け","勝ち" };
-
-	int tmp = 0;
-	int size = janken_.size();
+		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
+		if (addrList_.size() >= 2) {
 
 	for (int i = 0; i < size; i++) {
 		tmp = tmp | janken_.at(i);
@@ -209,21 +167,31 @@ int main()
 		}
 
 		std::cout << "recv message = " << buff << std::endl;
+		
 
-		for (int i = 0; i < addrList_.size(); i++) {
+		//1秒ごとに送信 10047エラーが出る。間違ったプロトコルかソケットが呼び出されたときに出るらしい
+		if (flame <= 60) {
 
-			ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
-			if (ret != strlen(buff))
-			{
-				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-				return 1;
+			for (int i = 0; i < addrList_.size(); i++) {
+			
+				char message[MESSAGELENGTH] = "TestSend";
+
+				ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
+				if (ret != strlen(message))
+				{
+					std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+					return 1;
+				}
+
+				std::cout << "sended message " << message << std::endl;
 			}
 
-			std::cout << "sended message " << buff << std::endl;
+			flame = 0;
 		}
+		
+
 	}
 
-	
 
 	// ここまでこないけど、ソケット破棄
 	ret = closesocket(sock);
