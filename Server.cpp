@@ -2,6 +2,7 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <vector>
+#include <bitset>
 
 #pragma comment( lib, "ws2_32.lib" )
 
@@ -24,10 +25,12 @@ struct UserData {
 	std::string name;
 	SOCKADDR_IN userID;
 	int janken;
+	bool isWin;
 
 	UserData() {
 		name = "NONE";
 		janken = INF;
+		isWin = false;
 	}
 
 };
@@ -36,16 +39,6 @@ const int ROCK = 9;
 const int PAPER = 4;
 const int SCISSORS = 2;
  
-
-struct PlayerInfo {
-	SOCKADDR_IN addr;
-	char playerName[MESSAGELENGTH];
-	int janken;
-
-	PlayerInfo() {
-		janken = INF;
-	}
-};
 
 int main()
 {
@@ -148,7 +141,7 @@ int main()
 
 
 		//送信
-		char buff[MESSAGELENGTH] = playerList_.at(pNum).name + "さんのじゃんけんの手を入力してください";
+		char buff[MESSAGELENGTH];
 		//SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(SOCKADDR_IN);//ここのsizeofに変数のほうを入れてる理由が何かあるのか
 		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum).userID, fromlen);
@@ -200,19 +193,35 @@ int main()
 	}
 	else {
 		for (int i = 0; i < size; i++) {
-			tmp = janken_.at(i);
+			tmp = playerList_.at(i).janken;
 			std::bitset<4> bit(result & tmp);
 			int countBit = bit.count();
-			cout << janken_.at(i).getName() << "さんは" << ref[countBit] << endl;
+			cout << playerList_.at(i).name << "さんは" << ref[countBit] << endl;
 			if (countBit == 1) {
-				janken_.at(i).CountW();
+				playerList_.at(i).isWin = true;//勝ち
+			}
+			else {
+				playerList_.at(i).isWin = false;//負け.念のため書いた
 			}
 		}
 	}
 
-	//ここで情報を常に受け取り、一定時間毎にすべてのクライアントに情報を返す
 	while (true)
 	{
+		for (int i = 0; i < playerList_.size(); i++) {
+			
+			char message[MESSAGELENGTH] = "TestSend";
+			int fromlen = sizeof(SOCKADDR_IN);
+			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i), fromlen);
+			if (ret != strlen(message))
+			{
+				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+				return 1;
+			}
+
+			std::cout << "sended message " << message << std::endl;
+		}
+		
 		//受信
 		char buff[MESSAGELENGTH];
 		SOCKADDR_IN fromAddr;
@@ -225,23 +234,6 @@ int main()
 		}
 
 		std::cout << "recv message = " << buff << std::endl;
-		
-
-		for (int i = 0; i < playerList_.size(); i++) {
-			
-			char message[MESSAGELENGTH] = "TestSend";
-
-			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i), fromlen);
-			if (ret != strlen(message))
-			{
-				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-				return 1;
-			}
-
-			std::cout << "sended message " << message << std::endl;
-		}
-		
-		
 
 	}
 
