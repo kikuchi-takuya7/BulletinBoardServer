@@ -8,35 +8,17 @@
 
 using std::vector;
 using std::cout;
-using std::cin;
 using std::endl;
+using std::cin;
 
-// ƒ|[ƒg”Ô†
+// ãƒãƒ¼ãƒˆç•ªå·
 const unsigned short SERVERPORT = 8888;
 
-// ‘—óM‚·‚éƒƒbƒZ[ƒW‚ÌÅ‘å’l
+// é€å—ä¿¡ã™ã‚‹ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®æœ€å¤§å€¤
 const unsigned int MESSAGELENGTH = 1024;
 
-//‚ ‚è‚¦‚È‚¢’l
+//ã‚ã‚Šãˆãªã„å€¤
 const int INF = 9999999;
-
-struct UserData {
-
-	std::string name;
-	SOCKADDR_IN userID;
-	int janken;
-
-	UserData() {
-		name = "NONE";
-		janken = INF;
-	}
-
-};
-
-const int ROCK = 9;
-const int PAPER = 4;
-const int SCISSORS = 2;
- 
 
 struct PlayerInfo {
 	SOCKADDR_IN addr;
@@ -52,7 +34,7 @@ int main()
 {
 	int ret;
 
-	// WinSock‚Ì‰Šú‰»	WinSock2.2
+	// WinSockã®åˆæœŸåŒ–	WinSock2.2
 	WSADATA wsaData;
 	ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (ret == SOCKET_ERROR)
@@ -60,21 +42,24 @@ int main()
 		std::cout << "initoError" << WSAGetLastError() << std::endl;
 		return 1;
 	}
+	
+	
 
-	// ƒ\ƒPƒbƒgƒfƒBƒXƒNƒŠƒvƒ^
+
+	// ã‚½ã‚±ãƒƒãƒˆãƒ‡ã‚£ã‚¹ã‚¯ãƒªãƒ—ã‚¿
 	SOCKET sock;
 
-	// UDPƒ\ƒPƒbƒgì¬
+	// UDPã‚½ã‚±ãƒƒãƒˆä½œæˆ
 	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-	// ƒ\ƒPƒbƒgì¬‚É¸”s
+	// ã‚½ã‚±ãƒƒãƒˆä½œæˆã«å¤±æ•—
 	if (sock == INVALID_SOCKET)
 	{
 		std::cout << "socktoError" << WSAGetLastError() << std::endl;
 		return 1;
 	}
 
-	// ƒ\ƒPƒbƒg‚Ég—p‚·‚éƒ|[ƒg”Ô†‚ğİ’è
+	// ã‚½ã‚±ãƒƒãƒˆã«ä½¿ç”¨ã™ã‚‹ãƒãƒ¼ãƒˆç•ªå·ã‚’è¨­å®š
 	SOCKADDR_IN bindAddr;
 	memset(&bindAddr, 0, sizeof(bindAddr));
 	bindAddr.sin_family = AF_INET;
@@ -90,19 +75,20 @@ int main()
 
 	std::cout << "ok" << std::endl;
 
-	//Q‰Á‚µ‚Ä‚éƒNƒ‰ƒCƒAƒ“ƒg‚ÌƒAƒhƒŒƒXî•ñ
-	vector<UserData> playerList_;
+
+	//å‚åŠ ã—ã¦ã‚‹ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®ã‚¢ãƒ‰ãƒ¬ã‚¹æƒ…å ±
+	vector<PlayerInfo> playerList_;
+
+	vector<int> janken_;
 
 	int num = 0;
 
-	//‚±‚±‚ÅƒŒƒCƒh‚ÉQ‰Á‚·‚éƒNƒ‰ƒCƒAƒ“ƒg‚ÌQ‰Á‚ğ‘Ò‚Â
+	//ã“ã“ã§ãƒ¬ã‚¤ãƒ‰ã«å‚åŠ ã™ã‚‹ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®å‚åŠ ã‚’å¾…ã¤
 	while (true)
 	{
 
-		//óM
+		//å—ä¿¡
 		char buff[MESSAGELENGTH];
-
-		//fromAddr‚Éî•ñ‚ª•Û‘¶‚³‚ê‚é
 		SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(fromAddr);
 		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
@@ -112,72 +98,50 @@ int main()
 			return 1;
 		}
 
-		UserData data;
-		data.name = buff;
-		data.userID = fromAddr;
+		std::cout << "recv message = " << buff << std::endl;
 
-		//ƒAƒhƒŒƒXî•ñ‚ğ•Û‘¶‚·‚é
-		playerList_.push_back(data);
-		std::cout << "Œ»İ‚Ìƒ†[ƒU[”" << playerList_.size() << std::endl;
+		
 
-		std::cout << "userName = " << buff << std::endl;
+		//ã‚¢ãƒ‰ãƒ¬ã‚¹æƒ…å ±ã‚’ä¿å­˜ã™ã‚‹
+		PlayerInfo info;
+		info.addr = fromAddr;
+		playerList_.push_back(info);
+		std::cout << playerList_.size() << std::endl;
 
-		//‘—M
-		char sendChar[MESSAGELENGTH] = "Join OK";
-
-
-		ret = sendto(sock, sendChar, strlen(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(sendChar))
-		{
-			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
-
-		std::cout << "Join OK " << std::endl;
-
-		//ˆê’U2lˆÈã‚É‚È‚Á‚½‚çØ‚éexeƒtƒ@ƒCƒ‹‚©‚çÀs‚·‚é‚Æ‚È‚º‚©~‚Ü‚Á‚Ä‚­‚ê‚È‚¢
-		if (playerList_.size() >= 2) {
-
-	for (int i = 0; i < size; i++) {
-		tmp = tmp | janken_.at(i);
-	}
-
-	int sTmp = tmp >> 1;//ZpƒVƒtƒg
-
-	int result = sTmp & tmp;
-
-	if (result == 7 || result == 0) {
-		cout << "ˆø‚«•ª‚¯I" << endl;
-	}
-	else {
-		for (int i = 0; i < size; i++) {
-			tmp = janken_.at(i);
-			std::bitset<4> bit(result & tmp);
-			int countBit = bit.count();
-			cout << janken_.at(i).getName() << "‚³‚ñ‚Í" << ref_[countBit] << endl;
-			if (countBit == 1) {
-				janken_.at(i).CountW();
-			}
-		}
-	}
-
-	//‚±‚±‚Ìwhile‚ÍƒvƒŒƒCƒ„[ƒŠƒXƒg‚ÌƒTƒCƒY•ª‚¾‚¯
-	int pNum = 0;
-	while (playerList_.size() < pNum) {
-
-
-		//‘—M
-		char buff[MESSAGELENGTH] = playerList_.at(pNum).name + "‚³‚ñ‚Ì‚¶‚á‚ñ‚¯‚ñ‚Ìè‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢";
-		//SOCKADDR_IN fromAddr;
-		int fromlen = sizeof(SOCKADDR_IN);//‚±‚±‚Ìsizeof‚É•Ï”‚Ì‚Ù‚¤‚ğ“ü‚ê‚Ä‚é——R‚ª‰½‚©‚ ‚é‚Ì‚©
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum).userID, fromlen);
+		//é€ä¿¡
+		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
 		if (ret != strlen(buff))
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 			return 1;
 		}
 
-		//óM
+		std::cout << "Join OK " << buff << std::endl;
+
+		if (playerList_.size() >= 3) {
+
+			break;
+		}
+
+	}
+
+	//ã“ã“ã®whileã¯ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ãƒªã‚¹ãƒˆã®ã‚µã‚¤ã‚ºåˆ†ã ã‘
+	int pNum = 0;
+	while (playerList_.size() < pNum) {
+
+
+		//é€ä¿¡
+		char buff[MESSAGELENGTH] = playerList_.at(pNum).playerName + "ã•ã‚“ã®ã˜ã‚ƒã‚“ã‘ã‚“ã®æ‰‹ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„";
+		//SOCKADDR_IN fromAddr;
+		int fromlen = sizeof(SOCKADDR_IN);//ã“ã“ã®sizeofã«å¤‰æ•°ã®ã»ã†ã‚’å…¥ã‚Œã¦ã‚‹ç†ç”±ãŒä½•ã‹ã‚ã‚‹ã®ã‹
+		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum), fromlen);
+		if (ret != strlen(buff))
+		{
+			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+			return 1;
+		}
+
+		//å—ä¿¡
 		char buff[MESSAGELENGTH];
 		SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(fromAddr);
@@ -189,50 +153,51 @@ int main()
 		}
 		std::cout << "recv message = " << buff << std::endl;
 
-		if (buff == "‚®[") {
-			playerList_.at(pNum).janken = ROCK;
+		if (buff == "ããƒ¼") {
+			janken_.emplace_back(9);
 		}
-		else if (buff == "‚¿‚å‚«") {
-			playerList_.at(pNum).janken = SCISSORS;
+		else if (buff == "ã¡ã‚‡ã") {
+			janken_.emplace_back(2);
 		}
-		else if (buff == "‚Ï[") {
-			playerList_.at(pNum).janken = PAPER;
+		else if (buff == "ã±ãƒ¼") {
+			janken_.emplace_back(4);
 		}
 
 	}
 
-	std::string ref = { "•‰‚¯","Ÿ‚¿" };
+	std::string ref_ = { "è² ã‘","å‹ã¡" };
 
 	int tmp = 0;
-	int size = playerList_.size();
+	int size = janken_.size();
 
 	for (int i = 0; i < size; i++) {
-		tmp = tmp | playerList_.at(i).janken;
+		tmp = tmp | janken_.at(i);
 	}
 
-	int sTmp = tmp >> 1;//ZpƒVƒtƒg
+	int sTmp = tmp >> 1;//ç®—è¡“ã‚·ãƒ•ãƒˆ
 
 	int result = sTmp & tmp;
 
 	if (result == 7 || result == 0) {
-		cout << "ˆø‚«•ª‚¯I" << endl;
+		cout << "å¼•ãåˆ†ã‘ï¼" << endl;
 	}
 	else {
 		for (int i = 0; i < size; i++) {
 			tmp = janken_.at(i);
 			std::bitset<4> bit(result & tmp);
 			int countBit = bit.count();
-			cout << janken_.at(i).getName() << "‚³‚ñ‚Í" << ref[countBit] << endl;
+			cout << janken_.at(i).getName() << "ã•ã‚“ã¯" << ref_[countBit] << endl;
 			if (countBit == 1) {
 				janken_.at(i).CountW();
 			}
 		}
 	}
 
-	//‚±‚±‚Åî•ñ‚ğí‚Éó‚¯æ‚èAˆê’èŠÔ–ˆ‚É‚·‚×‚Ä‚ÌƒNƒ‰ƒCƒAƒ“ƒg‚Éî•ñ‚ğ•Ô‚·
+
+	//ã“ã“ã§å‹æ•—ã‚’è¿”ã™
 	while (true)
 	{
-		//óM
+		//å—ä¿¡
 		char buff[MESSAGELENGTH];
 		SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(fromAddr);
@@ -244,42 +209,37 @@ int main()
 		}
 
 		std::cout << "recv message = " << buff << std::endl;
-		
 
-		for (int i = 0; i < playerList_.size(); i++) {
-			
-			char message[MESSAGELENGTH] = "TestSend";
+		for (int i = 0; i < addrList_.size(); i++) {
 
-			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i), fromlen);
-			if (ret != strlen(message))
+			ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
+			if (ret != strlen(buff))
 			{
 				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 				return 1;
 			}
 
-			std::cout << "sended message " << message << std::endl;
+			std::cout << "sended message " << buff << std::endl;
 		}
-		
-		
-
 	}
 
+	
 
-	// ‚±‚±‚Ü‚Å‚±‚È‚¢‚¯‚ÇAƒ\ƒPƒbƒg”jŠü
+	// ã“ã“ã¾ã§ã“ãªã„ã‘ã©ã€ã‚½ã‚±ãƒƒãƒˆç ´æ£„
 	ret = closesocket(sock);
 	if (ret == SOCKET_ERROR)
 	{
 		/*
-			ƒGƒ‰[ˆ—
+			ã‚¨ãƒ©ãƒ¼å‡¦ç†
 		*/
 	}
 
-	// WinSock‚ÌI—¹ˆ—
+	// WinSockã®çµ‚äº†å‡¦ç†
 	ret = WSACleanup();
 	if (ret == SOCKET_ERROR)
 	{
 		/*
-			ƒGƒ‰[ˆ—
+			ã‚¨ãƒ©ãƒ¼å‡¦ç†
 		*/
 	}
 
