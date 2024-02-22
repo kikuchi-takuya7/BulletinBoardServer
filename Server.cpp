@@ -6,6 +6,9 @@
 #pragma comment( lib, "ws2_32.lib" )
 
 using std::vector;
+using std::cout;
+using std::cin;
+using std::endl;
 
 // ポート番号
 const unsigned short SERVERPORT = 8888;
@@ -13,15 +16,26 @@ const unsigned short SERVERPORT = 8888;
 // 送受信するメッセージの最大値
 const unsigned int MESSAGELENGTH = 1024;
 
+//ありえない値
+const int INF = 9999999;
+
 struct UserData {
 
 	std::string name;
 	SOCKADDR_IN userID;
+	int janken;
+
+	UserData() {
+		name = "NONE";
+		janken = INF;
+	}
 
 };
 
-//ありえない値
-const int INF = 9999999;
+const int ROCK = 9;
+const int PAPER = 4;
+const int SCISSORS = 2;
+ 
 
 struct PlayerInfo {
 	SOCKADDR_IN addr;
@@ -76,7 +90,7 @@ int main()
 	std::cout << "ok" << std::endl;
 
 	//参加してるクライアントのアドレス情報
-	vector<UserData> addrList_;
+	vector<UserData> playerList_;
 
 	int num = 0;
 
@@ -97,20 +111,13 @@ int main()
 			return 1;
 		}
 
-		/*for (int i = 0; i < addrList_.size(); i++) {
-
-			if (addrList_.at(i) == fromAddr) {
-
-			}
-		}*/
-
 		UserData data;
 		data.name = buff;
 		data.userID = fromAddr;
 
 		//アドレス情報を保存する
-		addrList_.push_back(data);
-		std::cout << "現在のユーザー数" << addrList_.size() << std::endl;
+		playerList_.push_back(data);
+		std::cout << "現在のユーザー数" << playerList_.size() << std::endl;
 
 		std::cout << "userName = " << buff << std::endl;
 
@@ -128,7 +135,7 @@ int main()
 		std::cout << "Join OK " << std::endl;
 
 		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
-		if (addrList_.size() >= 2) {
+		if (playerList_.size() >= 2) {
 
 			break;
 		}
@@ -141,10 +148,10 @@ int main()
 
 
 		//送信
-		char buff[MESSAGELENGTH] = playerList_.at(pNum).playerName + "さんのじゃんけんの手を入力してください";
+		char buff[MESSAGELENGTH] = playerList_.at(pNum).name + "さんのじゃんけんの手を入力してください";
 		//SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(SOCKADDR_IN);//ここのsizeofに変数のほうを入れてる理由が何かあるのか
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum), fromlen);
+		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum).userID, fromlen);
 		if (ret != strlen(buff))
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
@@ -164,24 +171,24 @@ int main()
 		std::cout << "recv message = " << buff << std::endl;
 
 		if (buff == "ぐー") {
-			janken_.emplace_back(9);
+			playerList_.at(pNum).janken = ROCK;
 		}
 		else if (buff == "ちょき") {
-			janken_.emplace_back(2);
+			playerList_.at(pNum).janken = SCISSORS;
 		}
 		else if (buff == "ぱー") {
-			janken_.emplace_back(4);
+			playerList_.at(pNum).janken = PAPER;
 		}
 
 	}
 
-	std::string ref_ = { "負け","勝ち" };
+	std::string ref = { "負け","勝ち" };
 
 	int tmp = 0;
-	int size = janken_.size();
+	int size = playerList_.size();
 
 	for (int i = 0; i < size; i++) {
-		tmp = tmp | janken_.at(i);
+		tmp = tmp | playerList_.at(i).janken;
 	}
 
 	int sTmp = tmp >> 1;//算術シフト
@@ -196,7 +203,7 @@ int main()
 			tmp = janken_.at(i);
 			std::bitset<4> bit(result & tmp);
 			int countBit = bit.count();
-			cout << janken_.at(i).getName() << "さんは" << ref_[countBit] << endl;
+			cout << janken_.at(i).getName() << "さんは" << ref[countBit] << endl;
 			if (countBit == 1) {
 				janken_.at(i).CountW();
 			}
@@ -220,11 +227,11 @@ int main()
 		std::cout << "recv message = " << buff << std::endl;
 		
 
-		for (int i = 0; i < addrList_.size(); i++) {
+		for (int i = 0; i < playerList_.size(); i++) {
 			
 			char message[MESSAGELENGTH] = "TestSend";
 
-			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&addrList_.at(i), fromlen);
+			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i), fromlen);
 			if (ret != strlen(message))
 			{
 				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
