@@ -90,7 +90,6 @@ int main()
 	//ここでレイドに参加するクライアントの参加を待つ
 	while (true)
 	{
-
 		//受信
 		char buff[MESSAGELENGTH];
 
@@ -112,10 +111,11 @@ int main()
 		playerList_.push_back(data);
 		std::cout << "現在のユーザー数" << playerList_.size() << std::endl;
 
-		std::cout << "userName = " << buff << std::endl;
+		std::cout << "userName = " << data.name << std::endl;
 
 		//送信
-		char sendChar[MESSAGELENGTH] = "Join OK";
+		char sendChar[MESSAGELENGTH];
+		snprintf(sendChar, sizeof(sendChar), ", Join OK", buff);
 
 
 		ret = sendto(sock, sendChar, strlen(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
@@ -139,18 +139,6 @@ int main()
 	int pNum = 0;
 	while (playerList_.size() < pNum) {
 
-
-		//送信
-		char buff[MESSAGELENGTH];
-		//SOCKADDR_IN fromAddr;
-		int fromlen = sizeof(SOCKADDR_IN);//ここのsizeofに変数のほうを入れてる理由が何かあるのか
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum).userID, fromlen);
-		if (ret != strlen(buff))
-		{
-			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
-
 		//受信
 		char buff[MESSAGELENGTH];
 		SOCKADDR_IN fromAddr;
@@ -171,6 +159,10 @@ int main()
 		}
 		else if (buff == "ぱー") {
 			playerList_.at(pNum).janken = PAPER;
+		}
+
+		if (playerList_.empty()) {
+			break;
 		}
 
 	}
@@ -206,13 +198,24 @@ int main()
 		}
 	}
 
+
+	//プレイヤー全員に勝敗を報告
 	while (true)
 	{
 		for (int i = 0; i < playerList_.size(); i++) {
 			
-			char message[MESSAGELENGTH] = "TestSend";
+			char message[MESSAGELENGTH];
+
+			if (playerList_.at(i).isWin) {
+				snprintf(message, sizeof(message), ", 勝ち", playerList_.at(i).name.c_str());
+			}
+			else {
+				snprintf(message, sizeof(message), ", 負け", playerList_.at(i).name.c_str());
+			}
+
+
 			int fromlen = sizeof(SOCKADDR_IN);
-			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i), fromlen);
+			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
 			if (ret != strlen(message))
 			{
 				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
@@ -221,19 +224,6 @@ int main()
 
 			std::cout << "sended message " << message << std::endl;
 		}
-		
-		//受信
-		char buff[MESSAGELENGTH];
-		SOCKADDR_IN fromAddr;
-		int fromlen = sizeof(fromAddr);
-		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
-		if (ret == SOCKET_ERROR)
-		{
-			std::cout << "recvtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
-
-		std::cout << "recv message = " << buff << std::endl;
 
 	}
 
