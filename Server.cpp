@@ -96,7 +96,7 @@ int main()
 		//fromAddrÇ…èÓïÒÇ™ï€ë∂Ç≥ÇÍÇÈ
 		SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(fromAddr);
-		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
+		ret = recvfrom(sock, buff, strlen(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
 		if (ret == SOCKET_ERROR)
 		{
 			std::cout << "recvtoError" << WSAGetLastError() << std::endl;
@@ -118,8 +118,8 @@ int main()
 		snprintf(sendChar, sizeof(sendChar), ", Join OK", buff);
 
 
-		ret = sendto(sock, sendChar, strlen(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(sendChar))
+		ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+		if (ret == SOCKET_ERROR)
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 			return 1;
