@@ -2,7 +2,7 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <vector>
-#include<bitset>
+#include <bitset>
 
 #pragma comment( lib, "ws2_32.lib" )
 
@@ -25,10 +25,12 @@ struct UserData {
 	std::string name;
 	SOCKADDR_IN userID;
 	int janken;
+	bool isWin;
 
 	UserData() {
 		name = "NONE";
 		janken = INF;
+		isWin = false;
 	}
 
 };
@@ -36,17 +38,7 @@ struct UserData {
 const int ROCK = 9;
 const int PAPER = 4;
 const int SCISSORS = 2;
- 
 
-struct PlayerInfo {
-	SOCKADDR_IN addr;
-	char playerName[MESSAGELENGTH];
-	int janken;
-
-	PlayerInfo() {
-		janken = INF;
-	}
-};
 
 int main()
 {
@@ -98,7 +90,6 @@ int main()
 	//ここでレイドに参加するクライアントの参加を待つ
 	while (true)
 	{
-
 		//受信
 		char buff[MESSAGELENGTH];
 
@@ -120,62 +111,61 @@ int main()
 		playerList_.push_back(data);
 		std::cout << "現在のユーザー数" << playerList_.size() << std::endl;
 
-		std::cout << "userName = " << buff << std::endl;
+		std::cout << "userName = " << data.name << std::endl;
+
+		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
+		if (playerList_.size() >= 3) {
+			//送信
+			char sendChar[MESSAGELENGTH] = "AllOK";
+
+
+			ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+			if (ret == SOCKET_ERROR)
+			{
+				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+				return 1;
+			}
+
+			std::cout << "Join OK " << std::endl;
+			break;
+		}
 
 		//送信
-		char sendChar[MESSAGELENGTH] = "Join OK";
+		char sendChar[MESSAGELENGTH];
 
+		std::string tmp = buff;
+		tmp = tmp + ", Join OK";
+		strcpy_s(sendChar, tmp.size() + 1, tmp.c_str());
 
-		ret = sendto(sock, sendChar, strlen(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(sendChar))
+		ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+		if (ret == SOCKET_ERROR)
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 			return 1;
 		}
 
 		std::cout << "Join OK " << std::endl;
-
-		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
-		if (playerList_.size() >= 2) {
-
-	for (int i = 0; i < size; i++) {
-		tmp = tmp | janken_.at(i);
 	}
 
-	int sTmp = tmp >> 1;//算術シフト
+	//ぐーちょきぱーを出させる指示
+	//for (int i = 0; i < playerList_.size(); i++) {
 
-	int result = sTmp & tmp;
+	//	//送信
+	//	char sendChar[MESSAGELENGTH] = "ぐーorちょきorぱーを入力して";
 
-	if (result == 7 || result == 0) {
-		cout << "引き分け！" << endl;
-	}
-	else {
-		for (int i = 0; i < size; i++) {
-			tmp = janken_.at(i);
-			std::bitset<4> bit(result & tmp);
-			int countBit = bit.count();
-			cout << janken_.at(i).getName() << "さんは" << ref_[countBit] << endl;
-			if (countBit == 1) {
-				janken_.at(i).CountW();
-			}
-		}
-	}
+	//	SOCKADDR_IN fromAddr;
+	//	int fromlen = sizeof(fromAddr);
+	//	ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
+	//	if (ret == SOCKET_ERROR)
+	//	{
+	//		std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+	//		return 1;
+	//	}
+	//}
 
 	//ここのwhileはプレイヤーリストのサイズ分だけ
 	int pNum = 0;
-	while (playerList_.size() < pNum) {
-
-
-		//送信
-		char buff[MESSAGELENGTH] = playerList_.at(pNum).name + "さんのじゃんけんの手を入力してください";
-		//SOCKADDR_IN fromAddr;
-		int fromlen = sizeof(SOCKADDR_IN);//ここのsizeofに変数のほうを入れてる理由が何かあるのか
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&playerList_.at(pNum).userID, fromlen);
-		if (ret != strlen(buff))
-		{
-			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
+	while (playerList_.size() > pNum) {
 
 		//受信
 		char buff[MESSAGELENGTH];
@@ -189,19 +179,25 @@ int main()
 		}
 		std::cout << "recv message = " << buff << std::endl;
 
-		if (buff == "ぐー") {
+		if (strcmp(buff, "ぐー") == 0) {
 			playerList_.at(pNum).janken = ROCK;
 		}
-		else if (buff == "ちょき") {
+		else if (strcmp(buff, "ちょき") == 0) {
 			playerList_.at(pNum).janken = SCISSORS;
 		}
-		else if (buff == "ぱー") {
+		else if (strcmp(buff, "ぱー") == 0) {
 			playerList_.at(pNum).janken = PAPER;
 		}
+		else {
+			cout << "判定できなかった";
+			return 1;
+		}
+
+		pNum++;
 
 	}
 
-	std::string ref = { "負け","勝ち" };
+	std::string ref[2] = { "負け","勝ち" };
 
 	int tmp = 0;
 	int size = playerList_.size();
@@ -214,55 +210,75 @@ int main()
 
 	int result = sTmp & tmp;
 
+	bool isDraw = false;
+
 	if (result == 7 || result == 0) {
 		cout << "引き分け！" << endl;
+		isDraw = true;
 	}
 	else {
 		for (int i = 0; i < size; i++) {
-			tmp = janken_.at(i);
+			tmp = playerList_.at(i).janken;
 			std::bitset<4> bit(result & tmp);
 			int countBit = bit.count();
-			cout << janken_.at(i).getName() << "さんは" << ref[countBit] << endl;
+			cout << playerList_.at(i).name << "さんは" << ref[countBit] << endl;
 			if (countBit == 1) {
-				janken_.at(i).CountW();
+				playerList_.at(i).isWin = true;//勝ち
+
+			}
+			else {
+				playerList_.at(i).isWin = false;//負け
 			}
 		}
 	}
-	あ
-	//ここで情報を常に受け取り、一定時間毎にすべてのクライアントに情報を返す
-	while (true)
-	{
-		//受信
-		char buff[MESSAGELENGTH];
-		SOCKADDR_IN fromAddr;
-		int fromlen = sizeof(fromAddr);
-		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
-		if (ret == SOCKET_ERROR)
-		{
-			std::cout << "recvtoError" << WSAGetLastError() << std::endl;
-			return 1;
-		}
 
-		std::cout << "recv message = " << buff << std::endl;
-		
 
-		for (int i = 0; i < playerList_.size(); i++) {
-			
-			char message[MESSAGELENGTH] = "TestSend";
+	//プレイヤー全員に勝敗を報告
+	for (int i = 0; i < playerList_.size(); i++) {
 
-			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i), fromlen);
-			if (ret != strlen(message))
+		char message[MESSAGELENGTH];
+
+		//引き分けなら
+		if (isDraw = true) {
+			std::string tmp = "引き分け";
+			strcpy_s(message, tmp.size() + 1, tmp.c_str());
+			int fromlen = sizeof(SOCKADDR_IN);
+			ret = sendto(sock, message, sizeof(message), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
+			if (ret == SOCKET_ERROR)
 			{
 				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
 				return 1;
 			}
-
 			std::cout << "sended message " << message << std::endl;
-		}
-		
-		
 
+			break;
+		}
+
+		//勝ち負け
+		if (playerList_.at(i).isWin) {
+			std::string tmp = playerList_.at(i).name;
+			tmp = tmp + "さんの勝ち";
+			strcpy_s(message, tmp.size() + 1, tmp.c_str());
+		}
+		else {
+			std::string tmp = playerList_.at(i).name;
+			tmp = tmp + "さんの負け";
+			strcpy_s(message, tmp.size() + 1, tmp.c_str());
+		}
+
+
+		int fromlen = sizeof(SOCKADDR_IN);
+		ret = sendto(sock, message, sizeof(message), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
+		if (ret == SOCKET_ERROR)
+		{
+			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+			return 1;
+		}
+
+		std::cout << "sended message " << message << std::endl;
 	}
+
+
 
 
 	// ここまでこないけど、ソケット破棄
