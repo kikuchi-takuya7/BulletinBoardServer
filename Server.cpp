@@ -162,7 +162,7 @@ int main()
 	//		return 1;
 	//	}
 	//}
-
+	
 	//ここのwhileはプレイヤーリストのサイズ分だけ
 	int pNum = 0;
 	while (playerList_.size() > pNum) {
@@ -179,7 +179,7 @@ int main()
 		}
 		std::cout << "recv message = " << buff << std::endl;
 
-		if (strcmp(buff, "ぐー") == 0) {
+		if (strcmp(buff,"ぐー") == 0) {
 			playerList_.at(pNum).janken = ROCK;
 		}
 		else if (strcmp(buff, "ちょき") == 0) {
@@ -197,7 +197,7 @@ int main()
 
 	}
 
-	std::string ref[2] = { "負け","勝ち" };
+	std::string ref[2] = {"負け","勝ち"};
 
 	int tmp = 0;
 	int size = playerList_.size();
@@ -235,7 +235,7 @@ int main()
 
 	//プレイヤー全員に勝敗を報告
 	for (int i = 0; i < playerList_.size(); i++) {
-
+			
 		char message[MESSAGELENGTH];
 
 		//引き分けなら
@@ -278,7 +278,7 @@ int main()
 		std::cout << "sended message " << message << std::endl;
 	}
 
-
+	
 
 
 	// ここまでこないけど、ソケット破棄
