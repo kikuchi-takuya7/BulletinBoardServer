@@ -132,10 +132,8 @@ int main()
 
 		//送信
 		char sendChar[MESSAGELENGTH];
-		snprintf(sendChar, sizeof(sendChar), ", Join OK", buff);
-
-
-		ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+		snprintf(buff, sizeof(buff), ", Join OK", buff);
+		ret = sendto(sock, buff, sizeof(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
 		if (ret == SOCKET_ERROR)
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
@@ -145,6 +143,22 @@ int main()
 		std::cout << "Join OK " << std::endl;
 	}
 
+	//ぐーちょきぱーを出させる指示
+	//for (int i = 0; i < playerList_.size(); i++) {
+
+	//	//送信
+	//	char sendChar[MESSAGELENGTH] = "ぐーorちょきorぱーを入力して";
+
+	//	SOCKADDR_IN fromAddr;
+	//	int fromlen = sizeof(fromAddr);
+	//	ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
+	//	if (ret == SOCKET_ERROR)
+	//	{
+	//		std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+	//		return 1;
+	//	}
+	//}
+	
 	//ここのwhileはプレイヤーリストのサイズ分だけ
 	int pNum = 0;
 	while (playerList_.size() > pNum) {
@@ -161,28 +175,19 @@ int main()
 		}
 		std::cout << "recv message = " << buff << std::endl;
 
-		if (buff == "ぐー") {
+		if (strcmp(buff,"ぐー") == 0) {
 			playerList_.at(pNum).janken = ROCK;
 		}
-		else if (buff == "ちょき") {
+		else if (strcmp(buff, "ちょき") == 0) {
 			playerList_.at(pNum).janken = SCISSORS;
 		}
-		else if (buff == "ぱー") {
+		else if (strcmp(buff, "ぱー") == 0) {
 			playerList_.at(pNum).janken = PAPER;
 		}
-
-		//送信
-		char sendChar[MESSAGELENGTH] = "OK";
-
-
-		ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret == SOCKET_ERROR)
-		{
-			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+		else {
+			cout << "判定できなかった";
 			return 1;
 		}
-
-		std::cout << "Join OK " << std::endl;
 
 		pNum++;
 
@@ -212,41 +217,41 @@ int main()
 			cout << playerList_.at(i).name << "さんは" << ref[countBit] << endl;
 			if (countBit == 1) {
 				playerList_.at(i).isWin = true;//勝ち
+
 			}
 			else {
-				playerList_.at(i).isWin = false;//負け.念のため書いた
+				playerList_.at(i).isWin = false;//負け
 			}
 		}
 	}
 
 
 	//プレイヤー全員に勝敗を報告
-	while (true)
-	{
-		for (int i = 0; i < playerList_.size(); i++) {
+
+	for (int i = 0; i < playerList_.size(); i++) {
 			
-			char message[MESSAGELENGTH];
+		char message[MESSAGELENGTH];
 
-			if (playerList_.at(i).isWin) {
-				snprintf(message, sizeof(message), ", 勝ち", playerList_.at(i).name.c_str());
-			}
-			else {
-				snprintf(message, sizeof(message), ", 負け", playerList_.at(i).name.c_str());
-			}
-
-
-			int fromlen = sizeof(SOCKADDR_IN);
-			ret = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
-			if (ret != strlen(message))
-			{
-				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
-				return 1;
-			}
-
-			std::cout << "sended message " << message << std::endl;
+		if (playerList_.at(i).isWin) {
+			snprintf(message, sizeof(message), ", 勝ち", playerList_.at(i).name.c_str());
+		}
+		else {
+			snprintf(message, sizeof(message), ", 負け", playerList_.at(i).name.c_str());
 		}
 
+
+		int fromlen = sizeof(SOCKADDR_IN);
+		ret = sendto(sock, message, sizeof(message), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
+		if (ret == SOCKET_ERROR)
+		{
+			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+			return 1;
+		}
+
+		std::cout << "sended message " << message << std::endl;
 	}
+
+	
 
 
 	// ここまでこないけど、ソケット破棄
