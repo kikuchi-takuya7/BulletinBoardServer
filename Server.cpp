@@ -96,7 +96,7 @@ int main()
 		//fromAddrに情報が保存される
 		SOCKADDR_IN fromAddr;
 		int fromlen = sizeof(fromAddr);
-		ret = recvfrom(sock, buff, strlen(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
+		ret = recvfrom(sock, buff, sizeof(buff), 0, (SOCKADDR*)&fromAddr, &fromlen);
 		if (ret == SOCKET_ERROR)
 		{
 			std::cout << "recvtoError" << WSAGetLastError() << std::endl;
@@ -113,6 +113,23 @@ int main()
 
 		std::cout << "userName = " << data.name << std::endl;
 
+		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
+		if (playerList_.size() >= 2) {
+			//送信
+			char sendChar[MESSAGELENGTH] = "AllOK";
+
+
+			ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+			if (ret == SOCKET_ERROR)
+			{
+				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+				return 1;
+			}
+
+			std::cout << "Join OK " << std::endl;
+			break;
+		}
+
 		//送信
 		char sendChar[MESSAGELENGTH];
 		snprintf(sendChar, sizeof(sendChar), ", Join OK", buff);
@@ -126,18 +143,11 @@ int main()
 		}
 
 		std::cout << "Join OK " << std::endl;
-
-		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
-		if (playerList_.size() >= 2) {
-
-			break;
-		}
-
 	}
 
 	//ここのwhileはプレイヤーリストのサイズ分だけ
 	int pNum = 0;
-	while (playerList_.size() < pNum) {
+	while (playerList_.size() > pNum) {
 
 		//受信
 		char buff[MESSAGELENGTH];
@@ -161,13 +171,24 @@ int main()
 			playerList_.at(pNum).janken = PAPER;
 		}
 
-		if (playerList_.empty()) {
-			break;
+		//送信
+		char sendChar[MESSAGELENGTH] = "OK";
+
+
+		ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
+		if (ret == SOCKET_ERROR)
+		{
+			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+			return 1;
 		}
+
+		std::cout << "Join OK " << std::endl;
+
+		pNum++;
 
 	}
 
-	std::string ref = { "負け","勝ち" };
+	std::string ref[2] = {"負け","勝ち"};
 
 	int tmp = 0;
 	int size = playerList_.size();
