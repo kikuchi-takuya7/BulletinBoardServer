@@ -114,7 +114,7 @@ int main()
 		std::cout << "userName = " << data.name << std::endl;
 
 		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
-		if (playerList_.size() >= 2) {
+		if (playerList_.size() >= 3) {
 			//送信
 			char sendChar[MESSAGELENGTH] = "AllOK";
 
@@ -132,8 +132,12 @@ int main()
 
 		//送信
 		char sendChar[MESSAGELENGTH];
-		snprintf(buff, sizeof(buff), ", Join OK", buff);
-		ret = sendto(sock, buff, sizeof(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
+
+		std::string tmp = buff;
+		tmp = tmp + ", Join OK";
+		strcpy_s(sendChar, tmp.size() + 1, tmp.c_str());
+
+		ret = sendto(sock, sendChar, sizeof(sendChar), 0, (struct sockaddr*)&fromAddr, fromlen);
 		if (ret == SOCKET_ERROR)
 		{
 			std::cout << "sendtoError" << WSAGetLastError() << std::endl;
@@ -206,8 +210,11 @@ int main()
 
 	int result = sTmp & tmp;
 
+	bool isDraw = false;
+
 	if (result == 7 || result == 0) {
 		cout << "引き分け！" << endl;
+		isDraw = true;
 	}
 	else {
 		for (int i = 0; i < size; i++) {
@@ -227,16 +234,36 @@ int main()
 
 
 	//プレイヤー全員に勝敗を報告
-
 	for (int i = 0; i < playerList_.size(); i++) {
 			
 		char message[MESSAGELENGTH];
 
+		//引き分けなら
+		if (isDraw = true) {
+			std::string tmp = "引き分け";
+			strcpy_s(message, tmp.size() + 1, tmp.c_str());
+			int fromlen = sizeof(SOCKADDR_IN);
+			ret = sendto(sock, message, sizeof(message), 0, (struct sockaddr*)&playerList_.at(i).userID, fromlen);
+			if (ret == SOCKET_ERROR)
+			{
+				std::cout << "sendtoError" << WSAGetLastError() << std::endl;
+				return 1;
+			}
+			std::cout << "sended message " << message << std::endl;
+
+			break;
+		}
+
+		//勝ち負け
 		if (playerList_.at(i).isWin) {
-			snprintf(message, sizeof(message), ", 勝ち", playerList_.at(i).name.c_str());
+			std::string tmp = playerList_.at(i).name;
+			tmp = tmp + "さんの勝ち";
+			strcpy_s(message, tmp.size() + 1, tmp.c_str());
 		}
 		else {
-			snprintf(message, sizeof(message), ", 負け", playerList_.at(i).name.c_str());
+			std::string tmp = playerList_.at(i).name;
+			tmp = tmp + "さんの負け";
+			strcpy_s(message, tmp.size() + 1, tmp.c_str());
 		}
 
 
