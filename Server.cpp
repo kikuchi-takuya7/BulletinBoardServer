@@ -49,7 +49,7 @@ int main()
 	ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (ret == SOCKET_ERROR)
 	{
-		std::cout << "initoError" << WSAGetLastError() << std::endl;
+		std::cout << "InitoError" << WSAGetLastError() << std::endl;
 		return 1;
 	}
 
@@ -103,18 +103,8 @@ int main()
 			return 1;
 		}
 
-		UserData data;
-		data.name = buff;
-		data.userID = fromAddr;
-
-		//アドレス情報を保存する
-		playerList_.push_back(data);
-		std::cout << "現在のユーザー数" << playerList_.size() << std::endl;
-
-		std::cout << "userName = " << data.name << std::endl;
-
-		//一旦2人以上になったら切るexeファイルから実行するとなぜか止まってくれない
-		if (playerList_.size() >= 3) {
+		//endが入力されたら終わり
+		if (strcmp(buff, "end") == 0) {
 			//送信
 			char sendChar[MESSAGELENGTH] = "AllOK";
 
@@ -129,6 +119,16 @@ int main()
 			std::cout << "Join OK " << std::endl;
 			break;
 		}
+
+		UserData data;
+		data.name = buff;
+		data.userID = fromAddr;
+
+		//アドレス情報を保存する
+		playerList_.push_back(data);
+		std::cout << "現在のユーザー数" << playerList_.size() << std::endl;
+
+		std::cout << "userName = " << data.name << std::endl;
 
 		//送信
 		char sendChar[MESSAGELENGTH];
@@ -239,7 +239,7 @@ int main()
 		char message[MESSAGELENGTH];
 
 		//引き分けなら
-		if (isDraw = true) {
+		if (isDraw == true) {
 			std::string tmp = "引き分け";
 			strcpy_s(message, tmp.size() + 1, tmp.c_str());
 			int fromlen = sizeof(SOCKADDR_IN);
